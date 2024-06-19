@@ -7,9 +7,9 @@ function generateDownloadUrls() {
 
   // Adjust these indices according to your sheet
   var linkColumnIndex = 14; // Google Drive Link column (O)
-  var productColumnIndex = 3; // SKU column (D)
+  var productColumnIndex = 8; // SKU column (I)
   
-  for (var i = 1; i < data.length; i++) { // Start from row 2 to skip header
+  for (var i = 4; i < data.length; i++) { // Start from row 5 to skip header
     var product = data[i][productColumnIndex];
     var folderUrl = data[i][linkColumnIndex];
     var folderId = getFolderIdFromUrl(folderUrl);
