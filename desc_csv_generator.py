@@ -2,9 +2,13 @@ import csv
 import pandas as pd
 import copy
 
-outfile = 'gbh_products_cosmetics_desc_import.csv'
-shopify_export_file = '/Users/taro/Downloads/gbh_products_cosmetics.csv'
-df = pd.read_csv('/Users/taro/Downloads/GBH product descriptions - COSMETICS.csv')
+outfile = 'gbh_products_apparel_desc_import.csv'
+shopify_export_file = '/Users/taro/Downloads/gbh_products_apparel.csv'
+df = pd.read_csv(
+    '/Users/taro/Downloads/GBH product descriptions - Apparel.csv')
+df = df.drop_duplicates()
+df['商品名'] = df['商品名'].apply(str.strip)
+df['重さ / サイズ'] = df['重さ / サイズ'].apply(lambda x: x.replace('：', ': '))
 TEMPLATE = None
 
 
