@@ -75,9 +75,7 @@
 </div>
 <div id=""anymindProduct"">
 <p><span>{{{DESCRIPTION}}}</span></p>
-<h3>手入れ方法<br>
-</h3>
-<p>{{{PRODUCTCARE}}}</p>
+{{{PRODUCTCARE}}}
 <h3>サイズ・素材</h3>
 <table class=""left"" width=""100%"">
 <tbody>
