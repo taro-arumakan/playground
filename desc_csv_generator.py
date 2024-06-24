@@ -8,17 +8,19 @@ PRODUCT_CARE_TEMPLATE = '''
 <p>{{{PRODUCTCARE}}}</p>
 '''
 
-outfile = 'gbh_products_home_desc_import.csv'
-shopify_export_file = '/Users/taro/Downloads/gbh_products_home.csv'
+outfile = 'gbh_products_apparel_desc_import.csv'
+shopify_export_file = '/Users/taro/Downloads/gbh_products_apparel.csv'
 
 product_name_map = {'【商品情報確認中】GBH HOME TOOTHPASTE': 'GBH HOME TOOTHPASTE 0'}
 
 df = pd.read_csv(
-    '/Users/taro/Downloads/GBH product descriptions - HOME (3).csv')
+    '/Users/taro/Downloads/GBH product descriptions - Apparel (1).csv')
 df['商品名'] = df['商品名'].apply(str.strip)
-df['重さ / サイズ'] = df['重さ / サイズ'].apply(lambda x: x.replace('：', ': ').replace(' : ', ': '))
 df['サイズ'] = df['サイズ'].apply(lambda x: None if x == '-' else x)
+df = df.groupby(['商品名', 'サイズ']).first().reset_index()
 df = df.drop_duplicates()
+df['重さ / サイズ'] = df['重さ / サイズ'].apply(lambda x: x.replace(
+    '：', ': ').replace(' : ', ': '))
 
 # Sort by 商品名 then サイズ
 # Define a custom sorting key for サイズ
@@ -40,7 +42,7 @@ df = df.sort_values(['商品名', 'サイズ'], key=lambda col: col.map(custom_s
 # Group by 商品名
 df = df.groupby('商品名').agg({'商品説明': 'first',
                               '手入れ方法': 'first',
-                              '重さ / サイズ': lambda x: '\n'.join(w.replace(' : ', ': ') if not s or w.startswith(s) else f'{s}: {w}' for s, w in zip(df.loc[x.index, 'サイズ'], x.dropna())),
+                              '重さ / サイズ': lambda x: '\n'.join(w if not s or s == 'FREE' or w.startswith(s) else f'{s}: {w.replace('\n', ', ')}' for s, w in zip(df.loc[x.index, 'サイズ'], x.dropna())),
                               '素材': 'first',
                               '原産国': 'first'})
 df = df.reset_index()
@@ -85,8 +87,11 @@ with open(shopify_export_file) as f:
                 continue
             descf = df.loc[df['商品名'] == product_name_map.get(
                 row['Title'], row['Title'])]
-            print(f"processing {row['Title']}")
-            desc = populate_desc(descf)
-            of.write(f'{handle},{title},{desc}\n')
-
+            if not descf.empty:
+              print(f"processing {row['Title']}")
+              desc = populate_desc(descf)
+              of.write(f'{handle},{title},{desc}\n')
+            else:
+                print(f'product not found: {
+                      row['Title']}, SKU: {row['Variant SKU']}')
             
