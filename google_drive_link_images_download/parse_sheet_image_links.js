@@ -1,24 +1,53 @@
-function generateDownloadUrls() {
+function generateProductionDownloadUrls() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var data = sheet.getDataRange().getValues();
 
   var output = [];
-  output.push(['Product', 'Image Name', 'Download URL']);
+  output.push(['Product', 'Image Name', 'Download URL', 'Skipped']);
 
   // Adjust these indices according to your sheet
-  var linkColumnIndex = 14; // Google Drive Link column (O)
-  var productColumnIndex = 8; // SKU column (I)
+  var linkColumnIndex = 14; // Links are in column O
+  var productColumnIndex = 8; // SKU in column I
 
-  for (var i = 5; i < data.length; i++) { // Start from row 3 to skip header
+  // ID of the production version folder
+  var productionFolderId = '1E10XkX6148vo2DpMNrUN1H7G-DLgAG9t'; // Update with your actual production folder ID
+  var productionFolder = DriveApp.getFolderById(productionFolderId);
+  var productionFolders = productionFolder.getFolders();
+
+  var productionFoldersMap = {};
+  while (productionFolders.hasNext()) {
+    var folder = productionFolders.next();
+    productionFoldersMap[folder.getName()] = folder.getId();
+  }
+
+  var processedFolders = new Set();
+  var skippedSKUs = [];
+
+  for (var i = 1; i < data.length; i++) { // Start from row 2 to skip header
     var product = data[i][productColumnIndex];
     var folderUrl = data[i][linkColumnIndex];
-    Logger.log("folderUrl: " + folderUrl);
     var folderId = getFolderIdFromUrl(folderUrl);
-    Logger.log("folderId: " + folderId);
+
+    Logger.log(`processing ${product}`);
     if (folderId) {
-      var urls = getFolderImageUrls(folderId);
-      for (var j = 0; j < urls.length; j++) {
-        output.push([product, urls[j].name, urls[j].url]);
+      var folderName = DriveApp.getFolderById(folderId).getName();
+      if (processedFolders.has(folderName)) {
+        Logger.log('Skipping already processed folder: ' + folderName);
+        skippedSKUs.push(product);
+        output.push([product, '', '', 'Yes']);
+        continue;
+      }
+
+      if (productionFoldersMap[folderName]) {
+        var productionFolderId = productionFoldersMap[folderName];
+        var urls = getFolderImageUrls(productionFolderId);
+        for (var j = 0; j < urls.length; j++) {
+          output.push([product, urls[j].name, urls[j].url, 'No']);
+        }
+        processedFolders.add(folderName);
+      } else {
+        Logger.log('No matching production folder found for: ' + folderName);
+        output.push([product, '', '', 'No']);
       }
     }
   }
@@ -29,9 +58,9 @@ function generateDownloadUrls() {
     csvContent += row + "\r\n";
   });
 
-  var blob = Utilities.newBlob(csvContent, 'text/csv', 'downloadUrls.csv');
+  var blob = Utilities.newBlob(csvContent, 'text/csv', 'productionDownloadUrls.csv');
   var file = DriveApp.createFile(blob);
-  Logger.log('Download URLs file created: ' + file.getUrl());
+  Logger.log('Production download URLs file created: ' + file.getUrl());
 }
 
 function getFolderIdFromUrl(url) {
@@ -41,23 +70,11 @@ function getFolderIdFromUrl(url) {
 
 function getFolderImageUrls(folderId) {
   var folder = DriveApp.getFolderById(folderId);
-  var files_itr = folder.getFiles();
-  var files = [];
-  while (files_itr.hasNext()) {
-    var file = files_itr.next();
-    files.push(file);
-  }
-
-  // sorts the files array by file names alphabetically
-  files = files.sort(function (a, b) {
-    var aName = a.getName().toUpperCase();
-    var bName = b.getName().toUpperCase();
-    return aName.localeCompare(bName);
-  });
-
+  var files = folder.getFiles();
   var urls = [];
 
-  for (let file of files) {
+  while (files.hasNext()) {
+    var file = files.next();
     if (file.getMimeType().startsWith('image/')) {
       urls.push({ name: file.getName(), url: file.getDownloadUrl() });
     }
