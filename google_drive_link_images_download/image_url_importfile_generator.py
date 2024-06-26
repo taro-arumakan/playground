@@ -2,10 +2,9 @@ import os
 import pandas as pd
 
 shopify_image_root = 'https://cdn.shopify.com/s/files/1/0655/9596/5639/files'
-out_products_csv_path = 'image_urls_gbh_cosmetics.csv'
-image_dir = '/Users/taro/sc/playground/images_gbh_cosmetics'
-df = pd.read_csv('/Users/taro/Downloads/products_export_gbh_cometics.csv')    # Shopify products export file
-
+out_products_csv_path = 'image_urls_gbh_home.csv'
+image_dir = '/Users/taro/sc/playground/images_gbh_home'
+df = pd.read_csv('/Users/taro/Downloads/products_export_gbh_home.csv')    # Shopify products export file
 
 
 df = df[['Handle', 'Title', 'Variant SKU']]
@@ -18,18 +17,21 @@ for n in os.listdir(image_dir):
 
 expanded_rows = []
 
+title = None
 for _, row in df.iterrows():
     sku = row["Variant SKU"]
+    if pd.notnull(row['Title']):
+        position = 1
+        title = row['Title']
     if sku in sku_images_map:
         images = sku_images_map[sku]
         images.sort(key=lambda x: (-2 if x.endswith('__a.jpg') else (
                                    -1 if x.endswith('__b.jpg') else 
                                    int(x.split('_')[-1].split('.')[0])), x))
-        position = 1
         for img in images:
             expanded_rows.append({
                 "Handle": row["Handle"],
-                "Title": row["Title"],
+                "Title": title,
                 "Image Src": f'{shopify_image_root}/{img}',
                 "Image Position": position
             })
