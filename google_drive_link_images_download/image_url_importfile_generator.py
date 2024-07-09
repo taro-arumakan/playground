@@ -2,9 +2,9 @@ import os
 import pandas as pd
 
 shopify_image_root = 'https://cdn.shopify.com/s/files/1/0655/9596/5639/files'
-out_products_csv_path = 'image_urls_gbh_apparel.csv'
-image_dir = '/Users/taro/sc/playground/images_gbh_apparel_2'
-df = pd.read_csv('/Users/taro/Downloads/products_export_gbh_apparel.csv')    # Shopify products export file
+out_products_csv_path = 'image_urls_gbh_apparel_20240709.csv'
+image_dir = '/Users/taro/sc/playground/images_gbh_apparel_new'
+df = pd.read_csv('/Users/taro/Downloads/gbh_apparel_new.csv')    # Shopify products export file
 
 
 df = df[['Handle', 'Title', 'Variant SKU']]
