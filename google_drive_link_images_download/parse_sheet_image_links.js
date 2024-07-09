@@ -1,4 +1,4 @@
-function generateProductionDownloadUrls() {
+function generateDownloadUrls() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var data = sheet.getDataRange().getValues();
 
@@ -6,49 +6,43 @@ function generateProductionDownloadUrls() {
   output.push(['Product', 'Image Name', 'Download URL', 'Skipped']);
 
   // Adjust these indices according to your sheet
-  var linkColumnIndex = 14; // Links are in column O
-  var productColumnIndex = 8; // SKU in column I
-
-  // ID of the production version folder
-  var productionFolderId = '1E10XkX6148vo2DpMNrUN1H7G-DLgAG9t'; // Update with your actual production folder ID
-  var productionFolder = DriveApp.getFolderById(productionFolderId);
-  var productionFolders = productionFolder.getFolders();
-
-  var productionFoldersMap = {};
-  while (productionFolders.hasNext()) {
-    var folder = productionFolders.next();
-    productionFoldersMap[folder.getName()] = folder.getId();
-  }
+  var linkColumnIndex = 14; // Google Drive Link column (O)
+  var productColumnIndex = 8; // SKU column (I)
 
   var processedFolders = new Set();
   var skippedSKUs = [];
 
-  for (var i = 1; i < data.length; i++) { // Start from row 2 to skip header
+  for (var i = 4; i < data.length; i++) { // Start from row 4 to skip header
     var product = data[i][productColumnIndex];
+    Logger.log(`processing: ${product}`);
     var folderUrl = data[i][linkColumnIndex];
     var folderId = getFolderIdFromUrl(folderUrl);
-
-    Logger.log(`processing ${product}`);
+    Logger.log(`folderId: ${folderId}`);
     if (folderId) {
-      var folderName = DriveApp.getFolderById(folderId).getName();
-      if (processedFolders.has(folderName)) {
-        Logger.log('Skipping already processed folder: ' + folderName);
+      if (processedFolders.has(folderId)) {
+        Logger.log(`Skipping already processed folder ${folderId} for ${product}`);
         skippedSKUs.push(product);
         output.push([product, '', '', 'Yes']);
         continue;
       }
-
-      if (productionFoldersMap[folderName]) {
-        var productionFolderId = productionFoldersMap[folderName];
-        var urls = getFolderImageUrls(productionFolderId);
-        for (var j = 0; j < urls.length; j++) {
-          output.push([product, urls[j].name, urls[j].url, 'No']);
+      var urls = getFolderImageUrls(folderId);
+      for (const url of urls) {
+        var originalName = url.name;
+        Logger.log(`  processing: ${originalName}`);
+        var match = originalName.match(/_(\d+)(\..*)$/);
+        var newName;
+        if (match) {
+          var sequenceNumber = parseInt(match[1], 10);
+          var paddedNumber = ('0' + sequenceNumber).slice(-2);
+          newName = originalName.replace(/_(\d+)(\..*)$/, `_${paddedNumber}$2`);
+        } else {
+          Logger.log(`  !!! file name pattern did not match: ${originalName}`);
+          newName = originalName; // Keep the original name if no match
         }
-        processedFolders.add(folderName);
-      } else {
-        Logger.log('No matching production folder found for: ' + folderName);
-        output.push([product, '', '', 'No']);
+        Logger.log(`  file name is: ${newName}`);
+        output.push([product, newName, url.url, 'No']);
       }
+      processedFolders.add(folderId);
     }
   }
 
@@ -58,9 +52,9 @@ function generateProductionDownloadUrls() {
     csvContent += row + "\r\n";
   });
 
-  var blob = Utilities.newBlob(csvContent, 'text/csv', 'productionDownloadUrls.csv');
+  var blob = Utilities.newBlob(csvContent, 'text/csv', 'downloadUrls.csv');
   var file = DriveApp.createFile(blob);
-  Logger.log('Production download URLs file created: ' + file.getUrl());
+  Logger.log('Download URLs file created: ' + file.getUrl());
 }
 
 function getFolderIdFromUrl(url) {
@@ -70,11 +64,27 @@ function getFolderIdFromUrl(url) {
 
 function getFolderImageUrls(folderId) {
   var folder = DriveApp.getFolderById(folderId);
-  var files = folder.getFiles();
+  var files_itr = folder.getFiles();
+  var files = [];
+  while (files_itr.hasNext()) {
+    var file = files_itr.next();
+    files.push(file);
+  }
+
+  // Sorts the files array by the numeric part of the file names after the underscore
+  files = files.sort(function (a, b) {
+    var aName = a.getName();
+    var bName = b.getName();
+    var aMatch = aName.match(/_(\d+)(\..*)$/);
+    var bMatch = bName.match(/_(\d+)(\..*)$/);
+    var aNumber = aMatch ? parseInt(aMatch[1], 10) : 0;
+    var bNumber = bMatch ? parseInt(bMatch[1], 10) : 0;
+    return aNumber - bNumber;
+  });
+
   var urls = [];
 
-  while (files.hasNext()) {
-    var file = files.next();
+  for (let file of files) {
     if (file.getMimeType().startsWith('image/')) {
       urls.push({ name: file.getName(), url: file.getDownloadUrl() });
     }
