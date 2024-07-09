@@ -7,7 +7,7 @@ PRODUCT_CARE_TEMPLATE = '''
 </h3>
 <p>{{{PRODUCTCARE}}}</p>
 '''
-
+desctemplate = '/Users/taro/sc/playground/desc_csv_generator_template.txt'
 outfile = 'gbh_products_apparel_desc_import.csv'
 shopify_export_file = '/Users/taro/Downloads/gbh_products_apparel.csv'
 
@@ -53,7 +53,7 @@ TEMPLATE = None
 def desc_template():
     global TEMPLATE
     if not TEMPLATE:
-        with open(f'/Users/taro/sc/playground/product_description_template.txt') as f:
+        with open(desctemplate) as f:
             TEMPLATE = f.read()
     return copy.copy(TEMPLATE)
 
