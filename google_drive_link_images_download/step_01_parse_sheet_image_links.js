@@ -6,13 +6,14 @@ function generateDownloadUrls() {
   output.push(['Product', 'Image Name', 'Download URL', 'Skipped']);
 
   // Adjust these indices according to your sheet
-  var linkColumnIndex = 14; // Google Drive Link column (O)
-  var productColumnIndex = 8; // SKU column (I)
+  var linkColumnIndex = 13; // Google Drive Link column (N)
+  var productColumnIndex = 5; // SKU column (F)
+  var startRow = 3; // skip headers - zero base
 
   var processedFolders = new Set();
   var skippedSKUs = [];
 
-  for (var i = 4; i < data.length; i++) { // Start from row 4 to skip header
+  for (var i = startRow; i < data.length; i++) {
     var product = data[i][productColumnIndex];
     Logger.log(`processing: ${product}`);
     var folderUrl = data[i][linkColumnIndex];
@@ -27,20 +28,8 @@ function generateDownloadUrls() {
       }
       var urls = getFolderImageUrls(folderId);
       for (const url of urls) {
-        var originalName = url.name;
-        Logger.log(`  processing: ${originalName}`);
-        var match = originalName.match(/_(\d+)(\..*)$/);
-        var newName;
-        if (match) {
-          var sequenceNumber = parseInt(match[1], 10);
-          var paddedNumber = ('0' + sequenceNumber).slice(-2);
-          newName = originalName.replace(/_(\d+)(\..*)$/, `_${paddedNumber}$2`);
-        } else {
-          Logger.log(`  !!! file name pattern did not match: ${originalName}`);
-          newName = originalName; // Keep the original name if no match
-        }
-        Logger.log(`  file name is: ${newName}`);
-        output.push([product, newName, url.url, 'No']);
+        Logger.log(`  file name is: ${url.name}`);
+        output.push([product, url.name, url.url, 'No']);
       }
       processedFolders.add(folderId);
     }
@@ -71,15 +60,9 @@ function getFolderImageUrls(folderId) {
     files.push(file);
   }
 
-  // Sorts the files array by the numeric part of the file names after the underscore
-  files = files.sort(function (a, b) {
-    var aName = a.getName();
-    var bName = b.getName();
-    var aMatch = aName.match(/_(\d+)(\..*)$/);
-    var bMatch = bName.match(/_(\d+)(\..*)$/);
-    var aNumber = aMatch ? parseInt(aMatch[1], 10) : 0;
-    var bNumber = bMatch ? parseInt(bMatch[1], 10) : 0;
-    return aNumber - bNumber;
+  // Sort the files using natural order (considering numeric parts)
+  files.sort(function (a, b) {
+    return naturalCompare(a.getName(), b.getName());
   });
 
   var urls = [];
@@ -91,4 +74,9 @@ function getFolderImageUrls(folderId) {
   }
 
   return urls;
+}
+
+// Function to compare two strings in a natural order (considering numeric parts)
+function naturalCompare(a, b) {
+  return a.toLowerCase().localeCompare(b.toLowerCase(), undefined, { numeric: true, sensitivity: 'base' });
 }
