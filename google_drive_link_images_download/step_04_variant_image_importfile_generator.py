@@ -1,7 +1,7 @@
 import pandas as pd
 
-outfile = '/Users/tao/Downloads/variant_images.csv'
-df = pd.read_csv('/Users/taro/Downloads/products_export 3.csv')
+outfile = '/Users/taro/Downloads/variant_images.csv'
+df = pd.read_csv('/Users/taro/Downloads/products_export_1-4.csv')
 images = df[['Image Src']]
 df = df[['Handle', 'Title', 'Option1 Name', 'Option1 Value', 'Option2 Name', 'Option2 Value', 'Variant SKU', 'Variant Image']]
 df = df[df['Variant SKU'].notnull()]
@@ -14,4 +14,4 @@ def image_url(sku):
 
 df['Variant Image'] = df['Variant SKU'].apply(image_url)
 df = df.ffill()
-df.to_csv(outfile)
+df.to_csv(outfile, index=False)
