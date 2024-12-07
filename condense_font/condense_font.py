@@ -6,11 +6,11 @@ def scale_glyph(glyph, scale_x):
     if glyph.isComposite():
         for component in glyph.components:
             component.transform = (component.transform[0] * scale_x,  # Scale X in transform matrix
-                                   component.transform[1],  # Scale Y in transform matrix (unchanged)
-                                   component.transform[2],  # Skew (unchanged)
-                                   component.transform[3],  # Scale X in Y-axis direction (unchanged)
-                                   component.transform[4],  # Translate X (unchanged)
-                                   component.transform[5])  # Translate Y (unchanged)
+                                   component.transform[1],  # Scale Y in transform matrix
+                                   component.transform[2],  # Skew
+                                   component.transform[3],  # Scale X in Y-axis direction
+                                   component.transform[4],  # Translate X
+                                   component.transform[5])  # Translate Y
 
     elif glyph.numberOfContours > 0:
         glyph.coordinates = GlyphCoordinates((cx * scale_x, cy) for cx, cy in glyph.coordinates)
@@ -38,13 +38,15 @@ def scale_kerning(font, scale_x):
 def scale_glyphs_and_spacing(font_path, output_path, scale_x, new_family_name):
     font = TTFont(font_path)
     glyf_table = font['glyf']
-    for name in glyf_table.glyphs.keys():   # NOTE: font['glyf'].glyphs is lazy-loaded, `items()` won't do
+    for name in glyf_table.glyphs.keys():
+        # NOTE: font['glyf'].glyphs is lazy-loaded, `items()` won't do
         scale_glyph(glyf_table[name], scale_x)
 
     scale_hmtx(font, scale_x)
     scale_kerning(font, scale_x)
 
-    font['name'].names = [rename_font_name_record(record, new_family_name) for record in font['name'].names]
+    font['name'].names = [rename_font_name_record(record, new_family_name)
+                                        for record in font['name'].names]
     font.save(output_path)
     print(f"Saved scaled font to {output_path}")
 
@@ -56,9 +58,6 @@ new_family_name = "Noto Sans JP Condensed"  # New font family name
 
 
 scale_glyphs_and_spacing(input_font, output_font, scale_x, new_family_name)
-
-
-
 
 """
 pip install fonttools brotli
