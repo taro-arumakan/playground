@@ -61,5 +61,5 @@ scale_glyphs_and_spacing(input_font, output_font, scale_x, new_family_name)
 
 """
 pip install fonttools brotli
-fonttools ttLib.woff2 compress NotoSansJP-Condensed
+fonttools ttLib.woff2 compress NotoSansJP-Condensed.ttf
 """
